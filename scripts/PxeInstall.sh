@@ -119,7 +119,7 @@ cat <<EOF >$temp_dir/tftpd-hpa
 TFTP_USERNAME="tftp"
 TFTP_DIRECTORY="/var/lib/tftpboot"
 TFTP_ADDRESS=":69"
-TFTP_OPTIONS="--secure"
+TFTP_OPTIONS="--secure --verbose"
 RUN_DAEMON="yes"
 OPTIONS="-l -s /var/lib/tftpboot"
 EOF
@@ -217,7 +217,31 @@ fi
 
 
 defaultFileConfigure () {
-echo "++++++++++++++++++++++++++++++++++++++++++++++"
+echo "+++++++pxeServerPass="$2"
+if [ -f packages/images/"$1" ] #if [ "$1" ] #
+then
+    echo "ISO file $1 exists."
+	echo "$pxeServerPass" | sudo -S  mount -o  loop packages/images/$1 /mnt
+
+	sleep 10
+	echo "$pxeServerPass" | sudo -S mkdir /var/www/html/ubuntu
+	echo "$pxeServerPass" | sudo -S cp -fr /mnt/* /var/www/html/ubuntu/
+
+else
+    echo "Error: ISO file $1  does not exists."
+	exit 0
+fi
+sleep 10
+
+if [ -d "/var/lib/tftpboot/" ]
+	then
+	echo "Directory tftpboot exists. "
+	# un comment below lines
+	echo "$pxeServerPass" | sudo -S  cp -fr /var/www/html/ubuntu/install/netboot/* /var/lib/tftpboot/
+	command_status=$?
+	checkStatus $command_status " copy files from  /var/www/html/ubuntu/install/netboot/* to /var/lib/tftpboot/  "
+   fi
++++++++++++++++++++++++++++++++++++++++"
 echo "defaultFileConfigure  method "
 echo "++++++++++++++++++++++++++++++++++++++++++++++"
 temp_dir="$PWD"/conf/pxe_cluster
@@ -243,12 +267,36 @@ menu width 70
 menu margin 8
 menu tabmsg
 
-menu title ####### Automated PXE Boot Menu #######
+menu title ####### Automated PXErouters Boot Menu #######
 
 label ubuntu
 menu label ^1) Install Ubuntu
 path ubuntu-installer/amd64/boot-screens/
-include ubuntu-installer/amd64/boot-screens/menu.cfg
+include ubuntpxeServerPass="$2"
+if [ -f packages/images/"$1" ] #if [ "$1" ] #
+then
+    echo "ISO file $1 exists."
+	echo "$pxeServerPass" | sudo -S  mount -o  loop packages/images/$1 /mnt
+
+	sleep 10
+	echo "$pxeServerPass" | sudo -S mkdir /var/www/html/ubuntu
+	echo "$pxeServerPass" | sudo -S cp -fr /mnt/* /var/www/html/ubuntu/
+
+else
+    echo "Error: ISO file $1  does not exists."
+	exit 0
+fi
+sleep 10
+
+if [ -d "/var/lib/tftpboot/" ]
+	then
+	echo "Directory tftpboot exists. "
+	# un comment below lines
+	echo "$pxeServerPass" | sudo -S  cp -fr /var/www/html/ubuntu/install/netboot/* /var/lib/tftpboot/
+	command_status=$?
+	checkStatus $command_status " copy files from  /var/www/html/ubuntu/install/netboot/* to /var/lib/tftpboot/  "
+   fi
+u-installer/amd64/boot-screens/menu.cfg
 default ubuntu-installer/amd64/boot-screens/vesamenu.c32
 prompt 0
 timeout 100
@@ -422,6 +470,63 @@ checkStatus $command_status " writing data of local default  to  /var/lib/tftpbo
 }
 
 
+raspbianCopyBootAndConfigure () {
+echo "++++++++++++++++++++++++++++++++++++++++++++++"
+echo "raspbianCopyBootAndConfigure method "
+echo "++++++++++++++++++++++++++++++++++++++++++++++"
+temp_dir="$PWD"/packages/imgages
+#$1 is boot.tar
+#$2 is ssn
+#$3 is nfs name
+#$4 is server
+pxeServerPass="$5"
+
+if [ -f packages/images/"$1" ] #if [ "$1" ] #
+then
+    echo "Boot file $1 exists."
+else
+    echo "Error: ISO file $1  does not exists."
+	exit 0
+fi
+
+if [ -d "/var/lib/tftpboot/" ]
+	then
+	echo "Directory tftpboot exists. "
+	# un comment below lines
+	# create directory for ssn
+	if [ -d "/var/lib/tftpboot/$2" ]
+	then
+	    echo "boot directory for $2 exits, backing up."
+	    sudo mv /var/lib/tftpboot/"$2" /var/lib/tftpboot/"$2".backup
+	    command_status=$?
+	    checkStatus $command_status " backing up boot directory for $2  "
+	fi
+	sudo mkdir /var/lib/tftpboot/"$2"
+	sudo tar -xvf packages/images/"$1" -C /var/lib/tftpboot/"$2"
+	command_status=$?
+	checkStatus $command_status " extract files from  $1 to /var/lib/tftpboot/  "
+
+    #move boot directory up so /var/lib/tftpboot/<ssn>/  rather than /var/lib/tftpboot/<ssn>/boot/
+    sudo mv -f /var/lib/tftpboot/$2/boot/* /var/lib/tftpboot/$2
+    command_status=$?
+	checkStatus $command_status " moved files to /var/lib/tftpboot/$2  "
+
+    #move bootcode.bin to top level
+    sudo mv /var/lib/tftpboot/$2/bootcode.bin /var/lib/tftpboot/bootcode.bin
+    command_status=$?
+	checkStatus $command_status " moved bootcode to /var/lib/tftpboot/  "
+
+    #Update cmdline.txt
+    cat <<EOF >/var/lib/tftpboot/$2/cmdline.txt
+selinux=0 dwc_otg.lpm_enable=0 console=tty1 rootwait rw nfsroot=$4:/nfs/$3,v3 ip=dhcp root=/dev/nfs elevator=deadline
+EOF
+    command_status=$?
+	checkStatus $command_status " update cmdline.txt to $3  "
+fi
+
+
+}
+
 #main function execution
 
 
@@ -522,6 +627,10 @@ case "$1" in
       	tftpdHpaRestart "$2"
 	 ;;
 
+
+    raspbianCopyBootAndConfigure)
+        raspbianCopyBootAndConfigure "$2" "$3" "$4" "$5" "$6"
+    ;;
 
 	mountAndCopy)
       	mountAndCopy "$2"  "$3"

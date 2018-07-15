@@ -46,8 +46,10 @@ def __main(config, operation):
     build_pxe_server = None
     ubuntu_pxe_server = False
     centos_pxe_server = False
+    raspbian_pxe_server = False
     ubuntu_dict = {}
     centos_dict = {}
+    raspbian_dict = {}
     deprecated = False
     deprecated_info = {}
     if pxe_config is None:
@@ -72,6 +74,12 @@ def __main(config, operation):
                     user_pass = centos_dict["user_password"]
                     root_pass = centos_dict["root_password"]
                     user_name = centos_dict["user"]
+                if "raspbian" == key:
+                    raspbian_pxe_server = True
+                    build_pxe_server = "raspbian"
+                    raspbian_dict = item.get("raspbian")
+                    user_pass = root_pass = raspbian_dict["password"]
+                    user_name = raspbian_dict["user"]
     if ubuntu_pxe_server is True and centos_pxe_server is True:
         build_pxe_server = "ubuntu + centos"
 
@@ -80,7 +88,7 @@ def __main(config, operation):
     if operation == "hardware":
         __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict,
                                   subnet_list, build_pxe_server, user_name,
-                                  user_pass, root_pass)
+                                  user_pass, root_pass, raspbian_dict)
         if (build_pxe_server == "centos"
                 or build_pxe_server == "ubuntu + centos"):
             __centos_pxe_installation(pxe_dict, centos_dict, build_pxe_server)
@@ -144,7 +152,7 @@ def __main(config, operation):
 
 def __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict, subnet_list,
                               build_pxe_server, user_name, user_pass,
-                              root_pass):
+                              root_pass, raspbian_dict):
     """
     This will launch the shell script to  install and configure dhcp , tftp
     and apache server.
@@ -154,7 +162,7 @@ def __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict, subnet_list,
     os.system('sh scripts/PxeInstall.sh setProxy ' + proxy_dict["http_proxy"])
     logger.info("****************installPreReq ************************")
     os.system('sh scripts/PxeInstall.sh installPreReq ' + pxe_dict["password"])
-    logger.info("****************dhcpInstall***************************")
+    logger.info("****************dhcpInstall******ubuntu_dict*********************")
     os.system('sh scripts/PxeInstall.sh dhcpInstall ' + proxy_dict[
         "http_proxy"] + " " + pxe_dict["password"])
     logger.info("*******dhcpConfigure iscDhcpServer*********************")
@@ -179,6 +187,23 @@ def __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict, subnet_list,
     os.system(
         'sh scripts/PxeInstall.sh tftpdHpaRestart' + " "
         + pxe_dict["password"])
+
+    if build_pxe_server == "raspbian":
+        logger.info("******************Copy Boot and Configure cmdline.txt for each************************")
+        for subnet in subnet_list:
+            bind_host_list = subnet.get('bind_host')
+            for bind_host in bind_host_list:
+                ssn = bind_host.get('ssn')
+                name = bind_host.get('name')
+                os.system('sh scripts/PxeInstall.sh raspbianCopyBootAndConfigure ' + raspbian_dict["boot"] +
+                          " " + ssn + " " + name + " " + pxe_dict["serverIp"] + " " + pxe_dict["password"])
+
+        # logger.info("******************copyNFS for each************************")
+        # for subnet in subnet_list:
+        #     name = subnet.get('name')
+        #     os.system('sh scripts/PxeInstall.sh rasbianNFS ' + raspbian_dict["os"]
+        #               + name + " " + pxe_dict["password"])
+
     if build_pxe_server == "ubuntu" or build_pxe_server == "ubuntu + centos":
 
         logger.info("******************mountAndCopy************************")
@@ -203,7 +228,7 @@ def __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict, subnet_list,
         logger.info("*************bootMenuConfigure********************")
         os.system('sh scripts/PxeInstall.sh bootMenuConfigure ' + pxe_dict[
             "serverIp"] + " " + ubuntu_dict["seed"] + " " + pxe_dict[
-            "password"])
+                      "password"])
 
         listen_iface = ""
         name = ""
@@ -347,7 +372,7 @@ def __create_seed_config(pxe_dict, ubuntu_dict, boot_interface):
                        "d-i passwd/username string ubuntu", user_creds)
 
     logger.debug("configuring client user password in ubuntu-uefi-server.seed")
-    user_creds = "d-i passwd/user-password password "\
+    user_creds = "d-i passwd/user-password password " \
                  + ubuntu_dict["password"]
     __find_and_replace('conf/pxe_cluster/ubuntu-uefi-server.seed',
                        "d-i passwd/user-password password ChangeMe123",
@@ -355,7 +380,7 @@ def __create_seed_config(pxe_dict, ubuntu_dict, boot_interface):
 
     logger.debug("configuring client user password verify in "
                  "ubuntu-uefi-server.seed")
-    user_creds = "d-i passwd/user-password-again password "\
+    user_creds = "d-i passwd/user-password-again password " \
                  + ubuntu_dict["password"]
     __find_and_replace('conf/pxe_cluster/ubuntu-uefi-server.seed',
                        "d-i passwd/user-password-again password ChangeMe123",
@@ -363,7 +388,7 @@ def __create_seed_config(pxe_dict, ubuntu_dict, boot_interface):
 
     logger.debug("configuring client root password in "
                  "ubuntu-uefi-server.seed")
-    user_creds = "d-i passwd/root-password password "\
+    user_creds = "d-i passwd/root-password password " \
                  + ubuntu_dict["password"]
     __find_and_replace('conf/pxe_cluster/ubuntu-uefi-server.seed',
                        "d-i passwd/user-password password ChangeMe123",
@@ -371,7 +396,7 @@ def __create_seed_config(pxe_dict, ubuntu_dict, boot_interface):
 
     logger.debug("configuring client root password verify in "
                  "ubuntu-uefi-server.seed")
-    user_creds = "d-i passwd/root-password-again password "\
+    user_creds = "d-i passwd/root-password-again password " \
                  + ubuntu_dict["password"]
     __find_and_replace('conf/pxe_cluster/ubuntu-uefi-server.seed',
                        "d-i passwd/user-password-again password ChangeMe123",
@@ -390,7 +415,6 @@ def __create_seed_config(pxe_dict, ubuntu_dict, boot_interface):
               '/var/www/html/ubuntu/preseed')
 
 
-
 def __create_post_script_config(pxe_dict, ubuntu_dict, proxy_dict):
     """
     used to configure seed file from hosts.yaml file
@@ -399,8 +423,6 @@ def __create_post_script_config(pxe_dict, ubuntu_dict, proxy_dict):
     :param proxy_dict:
     """
     os.system('dos2unix conf/pxe_cluster/post.sh')
-
-
 
     logger.debug("configuring ntp server ip  in post.sh")
     ntp_server = "server " + pxe_dict["serverIp"] + " iburst"
@@ -431,7 +453,6 @@ def __create_post_script_config(pxe_dict, ubuntu_dict, proxy_dict):
 
     logger.debug("copy local post.sh to location /var/www/html/ubuntu/")
     os.system('cp conf/pxe_cluster/post.sh /var/www/html/ubuntu/')
-
 
 
 def __find_and_replace(fname, pat, s_after):
@@ -562,6 +583,7 @@ def __add_dhcpd_file(subnet_list):
                        + "  option domain-name \"" + dn + "\";" + "\n" \
                        + "  option subnet-mask " + netmask + ";" + "\n" \
                        + "  option routers " + router + ";" + "\n" \
+                       + "  option tftp-server-name " + "\"192.168.0.146\"" + ";" + "\n" \
                        + "  option broadcast-address " + broadcast + ";" \
                        + "\n" + "  default-lease-time " + str(default_lease) \
                        + ";" + "\n" + "  max-lease-time " + str(max_lease) \
@@ -585,8 +607,8 @@ def __add_cloud_init_files(pxe_dict, subnet_list, user_name, user_pass,
     Create cloud init files on the web server for each traget node
     """
     playbook_path = pkg_resources.resource_filename(
-      'snaps_boot.ansible_p.commission.hardware.playbooks',
-      'create_cloud_config.yaml')
+        'snaps_boot.ansible_p.commission.hardware.playbooks',
+        'create_cloud_config.yaml')
     mac_list = []
     for subnet in subnet_list:
         mac_ip_list = subnet.get('bind_host')
@@ -981,8 +1003,8 @@ def __validate_modify_centos_ks_cfg(pxe_dict, centos_dict, proxy_dict,
                        centos_dict["timezone"])
 
     logger.debug("configuring   client user password   name in ks.cfg")
-    user_credentials = "user --name=" + centos_dict["user"] + " --password=" +\
-                       centos_dict["user_password"] + " --gecos=" + "\"" +\
+    user_credentials = "user --name=" + centos_dict["user"] + " --password=" + \
+                       centos_dict["user_password"] + " --gecos=" + "\"" + \
                        centos_dict["user"] + "\""
     __find_and_replace('/var/www/centos7/ks.cfg', "user", user_credentials)
 
@@ -991,7 +1013,7 @@ def __validate_modify_centos_ks_cfg(pxe_dict, centos_dict, proxy_dict,
     __find_and_replace('/var/www/centos7/ks.cfg', "rootpw", user_credentials)
 
     logger.debug("configuring server url  in ks.cfg")
-    my_url = "url --url=" + "\"http://" + pxe_dict["serverIp"] + ":/centos7" +\
+    my_url = "url --url=" + "\"http://" + pxe_dict["serverIp"] + ":/centos7" + \
              "\""
     __find_and_replace('/var/www/centos7/ks.cfg', "url", my_url)
 
@@ -1035,7 +1057,7 @@ def __modify_file_for_os(operation):
 
 
 def __modify_ip_in_pxelinux(pxe_dict):
-    value = "append initrd=centos7/initrd.img ks=http://"\
+    value = "append initrd=centos7/initrd.img ks=http://" \
             + pxe_dict["serverIp"] + ":/centos7/ks.cfg"
     __find_and_replace('/var/lib/tftpboot/pxelinux.cfg/default',
                        "append initrd", value)
