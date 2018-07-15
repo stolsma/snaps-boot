@@ -162,7 +162,7 @@ def __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict, subnet_list,
     os.system('sh scripts/PxeInstall.sh setProxy ' + proxy_dict["http_proxy"])
     logger.info("****************installPreReq ************************")
     os.system('sh scripts/PxeInstall.sh installPreReq ' + pxe_dict["password"])
-    logger.info("****************dhcpInstall******ubuntu_dict*********************")
+    logger.info("****************dhcpInstall**************************")
     os.system('sh scripts/PxeInstall.sh dhcpInstall ' + proxy_dict[
         "http_proxy"] + " " + pxe_dict["password"])
     logger.info("*******dhcpConfigure iscDhcpServer*********************")
@@ -227,8 +227,7 @@ def __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict, subnet_list,
 
         logger.info("*************bootMenuConfigure********************")
         os.system('sh scripts/PxeInstall.sh bootMenuConfigure ' + pxe_dict[
-            "serverIp"] + " " + ubuntu_dict["seed"] + " " + pxe_dict[
-                      "password"])
+            "serverIp"] + " " + ubuntu_dict["seed"] + " " + pxe_dict["password"])
 
         listen_iface = ""
         name = ""
@@ -577,6 +576,8 @@ def __add_dhcpd_file(subnet_list):
             max_lease = subnet.get('max-lease')
             dns = subnet.get('dns')
             dn = subnet.get('dn')
+            # This is a hack for now because I only have the router ip which in my case is *not* the server.
+            # I will get this fixed soon.
             subnet_d = "subnet " + address + " netmask " + netmask \
                        + "{" + "\n" + "  range " + subnet_range + ";" + "\n" \
                        + "  option domain-name-servers " + dns + ";" + "\n" \

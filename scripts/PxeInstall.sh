@@ -243,35 +243,11 @@ menu width 70
 menu margin 8
 menu tabmsg
 
-menu title ####### Automated PXErouters Boot Menu #######
+menu title ####### Automated PXE Boot Menu #######
 
 label ubuntu
 menu label ^1) Install Ubuntu
 path ubuntu-installer/amd64/boot-screens/
-include ubuntpxeServerPass="$2"
-if [ -f packages/images/"$1" ] #if [ "$1" ] #
-then
-    echo "ISO file $1 exists."
-	echo "$pxeServerPass" | sudo -S  mount -o  loop packages/images/$1 /mnt
-
-	sleep 10
-	echo "$pxeServerPass" | sudo -S mkdir /var/www/html/ubuntu
-	echo "$pxeServerPass" | sudo -S cp -fr /mnt/* /var/www/html/ubuntu/
-
-else
-    echo "Error: ISO file $1  does not exists."
-	exit 0
-fi
-sleep 10
-
-if [ -d "/var/lib/tftpboot/" ]
-	then
-	echo "Directory tftpboot exists. "
-	# un comment below lines
-	echo "$pxeServerPass" | sudo -S  cp -fr /var/www/html/ubuntu/install/netboot/* /var/lib/tftpboot/
-	command_status=$?
-	checkStatus $command_status " copy files from  /var/www/html/ubuntu/install/netboot/* to /var/lib/tftpboot/  "
-   fi
 u-installer/amd64/boot-screens/menu.cfg
 default ubuntu-installer/amd64/boot-screens/vesamenu.c32
 prompt 0
