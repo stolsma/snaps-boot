@@ -248,7 +248,7 @@ menu title ####### Automated PXE Boot Menu #######
 label ubuntu
 menu label ^1) Install Ubuntu
 path ubuntu-installer/amd64/boot-screens/
-u-installer/amd64/boot-screens/menu.cfg
+include ubuntu-installer/amd64/boot-screens/menu.cfg
 default ubuntu-installer/amd64/boot-screens/vesamenu.c32
 prompt 0
 timeout 100
