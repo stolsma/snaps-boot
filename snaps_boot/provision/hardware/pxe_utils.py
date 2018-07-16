@@ -94,6 +94,10 @@ def __main(config, operation):
             __centos_pxe_installation(pxe_dict, centos_dict, build_pxe_server)
             __validate_modify_centos_ks_cfg(pxe_dict, centos_dict, proxy_dict,
                                             build_pxe_server)
+
+        if (build_pxe_server == "raspbian"):
+            __raspbian_nfs_installation(pxe_dict, raspbian_dict, build_pxe_server, subnet_list)
+
         # Handle deprecated file formats
         if not proxy_dict.get("ngcacher_proxy"):
             deprecated = True
@@ -150,12 +154,28 @@ def __main(config, operation):
     logger.warn(deprecated_info)
 
 
+def __raspbian_nfs_installation(pxe_dict, raspbian_dict, build_pxe_server, subnet_list):
+    """
+    This will install NFS and setup the file system if using diskless raspberry pi's
+    :param pxe_dict:
+    :param raspbian_dict:
+    :param build_pxe_server:
+    :return:
+    """
+    logger.info("NFS Installation")
+    logger.info("***********************Create NFS Directories**********************")
+    for subnet in subnet_list:
+        bind_host_list = subnet.get('bind_host')
+        for bind_host in bind_host_list:
+            name = bind_host.get('name')
+            os.system('sh scripts/NfsInstall.sh ' + name + " " + raspbian_dict["os"])
+
 def __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict, subnet_list,
                               build_pxe_server, user_name, user_pass,
                               root_pass, raspbian_dict):
     """
     This will launch the shell script to  install and configure dhcp , tftp
-    and apache server.
+    and apache server.rpcbind
     """
     logger.info("pxe_server_installation")
     logger.info("***********************set proxy**********************")
@@ -198,11 +218,6 @@ def __pxe_server_installation(proxy_dict, pxe_dict, ubuntu_dict, subnet_list,
                 os.system('sh scripts/PxeInstall.sh raspbianCopyBootAndConfigure ' + raspbian_dict["boot"] +
                           " " + ssn + " " + name + " " + pxe_dict["serverIp"] + " " + pxe_dict["password"])
 
-        # logger.info("******************copyNFS for each************************")
-        # for subnet in subnet_list:
-        #     name = subnet.get('name')
-        #     os.system('sh scripts/PxeInstall.sh rasbianNFS ' + raspbian_dict["os"]
-        #               + name + " " + pxe_dict["password"])
 
     if build_pxe_server == "ubuntu" or build_pxe_server == "ubuntu + centos":
 
@@ -485,6 +500,7 @@ def __config_ansible_file():
     file_path = "/etc/ansible/ansible.cfg"
     os.system('dos2unix ' + file_path)
     if os.path.exists(file_path):
+
         logger.info(file_path + " file exists")
         __find_and_replace(file_path, "#host_key_checking",
                            "host_key_checking = False")
