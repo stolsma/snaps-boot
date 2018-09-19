@@ -17,7 +17,7 @@ d-i netcfg/dhcp_timeout string 240
 d-i netcfg/hostname string compute
 d-i netcfg/wireless_wep string
 d-i netcfg/hostname seen true
- 
+
 d-i base-installer/kernel/overrride-image string linux-server
 
 # Equivalent to url --url=http://<> in ks.cfg
@@ -30,7 +30,7 @@ d-i mirror/http/proxy string
 d-i clock-setup/utc-auto boolean true
 d-i time/zone string America/Denver
 d-i clock-setup/ntp boolean true
-d-i clock-setup/ntp-server string 192.168.0.1 
+d-i clock-setup/ntp-server string 192.168.0.1
 
 
 ### Partitioning
@@ -40,7 +40,7 @@ d-i partman-auto/disk string /dev/sda
 # - regular: use the usual partition types for your architecture
 # - lvm:     use LVM to partition the disk
 # - crypto:  use LVM within an encrypted partition
-d-i partman-auto/method string lvm 
+d-i partman-auto/method string lvm
 
 # If one of the disks that are going to be automatically partitioned
 # contains an old LVM configuration, the user will normally receive a
@@ -130,7 +130,7 @@ d-i grub-installer/only_debian boolean true
 d-i grub-installer/with_other_os boolean true
 
 # Wait for two seconds in grub
-d-i	grub-installer/timeout string 2 
+d-i	grub-installer/timeout string 2
 
 d-i finish-install/reboot_in_progress note
 

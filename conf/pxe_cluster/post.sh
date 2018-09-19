@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 cat > /etc/apt/apt.conf <<EOF
-Acquire::http::Proxy "http://172.16.141.17:3142";
-Acquire::http::Proxy "http://172.16.141.17:3142";
+Acquire::http::Proxy "http://{{.Machine.url}}:3142";
+Acquire::http::Proxy "http://{{.Machine.url}}:3142";
 Acquire::ftp::Proxy "";
 EOF
 
@@ -19,9 +19,6 @@ deb http://security.ubuntu.com/ubuntu xenial-security universe
 deb http://security.ubuntu.com/ubuntu xenial-security multiverse
 EOF
 
-
-
-
 apt-get -f -y install
 apt-get -qq -y autoremove
 apt-get clean
@@ -34,14 +31,14 @@ service ssh restart
 
 apt-get -y install ntp
 cat >> /etc/ntp.conf <<EOF
-server 172.16.141.17 iburst
+server {{.Machine.url}} iburst
 EOF
 
 
 #Get the MAC for the first working NIC
-ADMIN_MAC=$(ip a | grep -v lo| awk 'f{print $2;f=0;exit} /UP/{f=1}')
-CLOUD_INIT_IP=cloud-init-ip
-sed -E -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\" console=ttyS1,115200  ds=nocloud-net cloud-config-url=http:\/\/$CLOUD_INIT_IP\/latest\/meta-data\/$ADMIN_MAC \"/g" /etc/default/grub
+# ADMIN_MAC=$(ip a | grep -v lo| awk 'f{print $2;f=0;exit} /UP/{f=1}')
+# CLOUD_INIT_IP=cloud-init-ip
+sed -E -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\" console=ttyS1,115200  \"/g" /etc/default/grub
 update-grub
 cat >> /etc/modprobe.d/nest.conf <<EOF
 options kvm_intel nested=1
