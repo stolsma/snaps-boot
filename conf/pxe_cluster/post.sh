@@ -30,7 +30,7 @@ sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
 service ssh restart
 
 apt-get -y install ntp
-cat >> /target/ntp.conf <<EOF
+cat >> /target/etc/ntp.conf <<EOF
 server {{.Machine.url}} iburst
 EOF
 
@@ -40,6 +40,6 @@ EOF
 # CLOUD_INIT_IP=cloud-init-ip
 sed -E -i "s/GRUB_CMDLINE_LINUX=\"\"/GRUB_CMDLINE_LINUX=\" console=ttyS1,115200  \"/g" /etc/default/grub
 update-grub
-cat >> /target/modprobe.d/nest.conf <<EOF
+cat >> /target/etc/modprobe.d/nest.conf <<EOF
 options kvm_intel nested=1
 EOF
