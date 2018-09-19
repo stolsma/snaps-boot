@@ -14,7 +14,9 @@
 
 
 import requests
+import urllib3
 
+urllib3.disable_warnings()
 
 class DigitalRebar:
     def __init__(self, username, password, url):
@@ -25,7 +27,6 @@ class DigitalRebar:
 
     def authorize(self):
         r = requests.get(self.url + '/api/v3/users/rocketskates/token?ttl=28800', auth=(self.username, self.password), verify=False)
-        print r.status_code
         if (r.status_code == 200):
             body = r.json()
             self.token = body['Token']
@@ -36,6 +37,8 @@ class DigitalRebar:
         return self.token != ''
 
     def get(self, resource, id=None):
+        if not self.isAuthorized():
+            self.authorize()
         headers = {'Authorization': 'Bearer ' + self.token}
         actualResource = resource
         if id != None:
@@ -48,8 +51,9 @@ class DigitalRebar:
             print r.json()
             return r.status_code
 
-
     def post(self, resource, body):
+        if not self.isAuthorized():
+            self.authorize()
         headers = {'Authorization': 'Bearer ' + self.token}
         actualResource = resource
         r = requests.post(self.url + '/api/v3/' + actualResource, headers=headers, json=body, verify=False)
@@ -61,6 +65,8 @@ class DigitalRebar:
             return r.status_code
 
     def delete(self, resource, id):
+        if not self.isAuthorized():
+            self.authorize()
         headers = {'Authorization': 'Bearer ' + self.token}
         actualResource = resource + '/' + id
         r = requests.delete(self.url + '/api/v3/' + actualResource, headers=headers, verify=False)
