@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cat > /etc/apt/apt.conf <<EOF
+cat > /target/etc/apt/apt.conf <<EOF
 Acquire::http::Proxy "http://{{.Machine.url}}:3142";
 Acquire::http::Proxy "http://{{.Machine.url}}:3142";
 Acquire::ftp::Proxy "";
@@ -29,7 +29,7 @@ apt-get -qq -y install libltdl7
 sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
 service ssh restart
 
-apt-get -y install ntp
+# apt-get -y install ntp
 cat >> /target/etc/ntp.conf <<EOF
 server {{.Machine.url}} iburst
 EOF
