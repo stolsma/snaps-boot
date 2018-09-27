@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 cat > /target/etc/apt/apt.conf <<EOF
-Acquire::http::Proxy "http://{{.Machine.url}}:3142";
-Acquire::http::Proxy "http://{{.Machine.url}}:3142";
+Acquire::http::Proxy "http://{{.Machine.ipaddress}}:3142";
+Acquire::http::Proxy "http://{{.Machine.ipaddress}}:3142";
 Acquire::ftp::Proxy "";
 EOF
 
@@ -31,7 +31,7 @@ service ssh restart
 
 # apt-get -y install ntp
 cat >> /target/etc/ntp.conf <<EOF
-server {{.Machine.url}} iburst
+server {{.Machine.ipaddress}} iburst
 EOF
 
 
